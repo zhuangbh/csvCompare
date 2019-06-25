@@ -392,6 +392,7 @@ def save_xls(date1, date2, xls_path):
             i = i + timedelta(days=1)
 
 a = r'C:\Users\Solomon\Desktop\Export Test June.xlsx'
+
 save_xls('2019-06-01', '2019-06-30', a)
 
 
@@ -434,7 +435,6 @@ while True:
                    date_fundpark_portfolio(read_fundpark_local_blotter(), '2019-06-01'),
                    date_culum_portfolio(read_culum_local_blotter(), '2019-06-01'),
                    date_incomlend_portfolio(read_incomlend_db_blotter(), '2019-06-01'))
-
 
 
     end = time.time()
