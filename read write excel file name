@@ -1,0 +1,28 @@
+import pandas as pd
+import os.path
+from os import path
+
+'''
+b = '\\'
+print("plz input i file name")
+c = input()
+d = '.xlsx'
+filename = a+b+c+d
+'''
+dataExcel = pd.read_excel(r'C:\Users\Solomon\Desktop\S.xlsx')
+dfExcel = pd.DataFrame(dataExcel)
+
+print("plz input o file name")
+a= r'C:\Users\Solomon\Desktop'
+b = '\\'
+d = '.xlsx'
+
+c = input()
+ofilename = a+b+c+d
+
+while path.exists(ofilename) == True:
+    print("plz enter another name")
+    c = input()
+    ofilename = a + b + c + d
+
+dfExcel.to_excel(ofilename, sheet_name="test", index=False)
