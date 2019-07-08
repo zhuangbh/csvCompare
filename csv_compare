@@ -9,10 +9,12 @@ from src.database import Database
 
 
 class Download():
+    '''
     desired_width = 1000
     pd.set_option('display.width', desired_width)
     np.set_printoptions(linewidth=desired_width)
     pd.set_option('display.max_columns', 25)
+    '''
 
     #client = MongoClient('47.244.166.253', 27017)
     client = MongoClient('47.74.231.215', 27018)
@@ -30,9 +32,6 @@ class Download():
 
     def read_total_advance_USD():
         df = pd.read_excel(r'C:\Users\Solomon\Desktop\IACF trade blotter.xlsx', sheet_name="Subscription")
-
-        #total = df.iloc[1:2,7:8]
-        #total = df.loc[1:2,7:8].values[0]
 
         total = df.at[0, 'Total Subscription amount (USD)']
 
@@ -150,130 +149,7 @@ class Download():
             Download.collection_incomlend_blotter.insert_many(data)
 
     ###################################
-    '''
-    @staticmethod
-    def update_qupital_portfolio(df):
-        indexNames = df[df['Status'] == 'Remitted'].index
-        df.drop(indexNames, inplace=True)
 
-        df['Advanced Amount'] = df['Advanced Amount'].str.replace(',', '')
-        df['Advanced Amount'] = df['Advanced Amount'].str.replace(' ', '')
-        df["Advanced Amount"] = pd.to_numeric(df["Advanced Amount"])
-
-        df['Advance amount (USD)'] = np.where(df['Currency'] == 'HKD', (df['Advanced Amount'] / 7.8),
-                                              df['Advanced Amount'])
-
-        df['Account'] = 'Qupital'
-        df['% total'] = "NA"
-
-        df['Per position limit'] = np.where(df['Advance amount (USD)'] < 300000, 'Yes', 'Out of limit')
-
-        df.rename(columns={"Auction no": "Trade ID", "Expected Duration (day(s))": "Tenor (days)",
-                           "Advanced Date": "Start date", "Due date": "End date",
-                           "Net Return (% pa)": "Annualized return (%)", "Seller No": "Seller code",
-                           "Obligor": "Obligor code"}, inplace=True)
-
-        df = df[['Trade ID', 'Currency', 'Advanced Amount', 'Tenor (days)', 'Start date', 'End date',
-                 'Annualized return (%)', 'Advance amount (USD)', 'Seller code', 'Obligor code', '% total', 'Account',
-                 'Per position limit']]
-
-        return df
-
-    @staticmethod
-    def update_fundpark_portfolio(df):
-        indexNames = df[df['Actual Repayment Date'] != ''].index
-        df.drop(indexNames, inplace=True)
-
-        df['Currency'] = df['Requested Loan Amount'].str.slice(0, 3)
-        df['Advanced Amount'] = df['Requested Loan Amount'].str.slice(5, 30)
-        df['Advanced Amount'] = df['Advanced Amount'].str.replace(',', '')
-        df['Advanced Amount'] = df['Advanced Amount'].str.replace(' ', '').astype(float)
-
-        df['Annualized return (%)'] = (12 * df['Interest Rate (per month)'] - 0.01) * 100
-        df['Advance amount (USD)'] = np.where(df['Currency'] == 'HKD', (df['Advanced Amount'] / 7.8),
-                                              df['Advanced Amount'])
-
-        df['End date'] = pd.to_datetime(df['Trade Date']) + pd.to_timedelta(df['Expected Tenor (days)'], unit='D')
-        df['End date'] = df['End date'].astype(str)
-
-        df['Seller code'] = df['Trade ID'].str.slice(2, 6)
-
-        df['Account'] = 'Fundpark'
-        df['% total'] = "NA"
-        df['Per position limit'] = np.where(df['Advance amount (USD)'] < 300000, 'Yes', 'Out of limit')
-
-        df.rename(
-            columns={"Expected Tenor (days)": "Tenor (days)", "Trade Date": "Start date", "Buyer": "Obligor code"},
-            inplace=True)
-
-        df = df[
-            ['Trade ID', 'Currency', 'Advanced Amount', 'Tenor (days)', 'Start date', 'End date',
-             'Annualized return (%)',
-             'Advance amount (USD)', 'Seller code', 'Obligor code', '% total', 'Account', 'Per position limit']]
-
-        return df
-
-    @staticmethod
-    def update_culum_portfolio(df):
-        indexNames = df[df['Acutal payment date'] != 'NA'].index
-        df.drop(indexNames, inplace=True)
-
-        df['Currency'] = df['Total investment'].str.slice(0, 3)
-
-        df['Advanced Amount'] = df['Total investment'].str.slice(3, 30)
-        df['Advanced Amount'] = df['Advanced Amount'].str.replace(',', '')
-        df['Advanced Amount'] = df['Advanced Amount'].str.replace(' ', '').astype(float)
-
-        df['Annualized return (%)'] = 100 * df['Return on investment (annualised)']
-
-        df['Advance amount (USD)'] = np.where(df['Currency'] == 'USD',
-                                              df['Advanced Amount'], (df['Advanced Amount'] / 1.36))
-
-        df['Account'] = 'Culum'
-        df['% total'] = "NA"
-        df['Per position limit'] = np.where(df['Advance amount (USD)'] < 300000, 'Yes', 'Out of limit')
-
-        df.rename(columns={"Investment No": "Trade ID", "Tenor": "Tenor (days)", "Purchase date": "Start date",
-                           "Expected payment date": "End date", "Seller": "Seller code", "Obligor": "Obligor code"},
-                  inplace=True)
-
-        df = df[
-            ['Trade ID', 'Currency', 'Advanced Amount', 'Tenor (days)', 'Start date', 'End date',
-             'Annualized return (%)',
-             'Advance amount (USD)', 'Seller code', 'Obligor code', '% total', 'Account', 'Per position limit']]
-
-        return df
-
-    @staticmethod
-    def update_incomlend_portfolio(df):
-        df['Trade ID'] = ('L' + df['Supplier Invoice Ref Number'])
-
-        df['Currency'] = df['Amount'].str.slice(0, 3)
-
-        df['Advanced Amount'] = df['Allocation Amount'].str.slice(4, 15)
-        df['Advanced Amount'] = df['Advanced Amount'].str.replace(',', '')
-        df['Advanced Amount'] = df['Advanced Amount'].str.replace(' ', '').astype(float)
-
-        df['Annualized return (%)'] = ((1 / (1 - df['Discount rate'])) ** 12 - 1) * 100
-
-        df['Advance amount (USD)'] = np.where(df['Currency'] == 'USD',
-                                              df['Advanced Amount'], (df['Advanced Amount'] / 1.36))
-
-        df['Account'] = 'Incomlend'
-        df['% total'] = "NA"
-        df['Per position limit'] = np.where(df['Advance amount (USD)'] < 300000, 'Yes', 'Out of limit')
-
-        df.rename(columns={"Financing period": "Tenor (days)", "Effective Date": "Start date",
-                           "Expected repayment date": "End date", "Invoice": "Seller code",
-                           "Supplier name": "Obligor code"}, inplace=True)
-
-        df = df[
-            ['Trade ID', 'Currency', 'Advanced Amount', 'Tenor (days)', 'Start date', 'End date',
-             'Annualized return (%)',
-             'Advance amount (USD)', 'Seller code', 'Obligor code', '% total', 'Account', 'Per position limit']]
-
-        return df
-        '''
 
     @staticmethod
     def search_portfolio(dfQ, dfF, dfC, dfI,i):
@@ -288,13 +164,9 @@ class Download():
 
         df['Late day'] = df['Late day'].astype(str)
 
+        df['Late day'] = df['Late day'].str.split(' ').str[0]
 
-        '''
-        df['Late day'] = np.where(i > pd.to_datetime(df['End date']),
-                                  df['Late day'], pd.to_timedelta("0"))
 
-        df['Late day'] = df['Late day'].astype(str)
-        '''
 
         df = df[
             ['Trade ID', 'Currency', 'Advanced Amount', 'Tenor (days)', 'Start date', 'End date',
@@ -344,6 +216,8 @@ class Download():
              'Advance amount (USD)', 'Seller code', 'Obligor code', '% total', 'Account', 'Late day',
              'Per position limit']]
 
+        df['End date'] = df['End date'].str.split(' ').str[0]
+
 
         data = df.to_dict(orient='records')  # Here's our added param..
 
@@ -359,20 +233,6 @@ class Download():
         Download.date_culum_portfolio(Download.read_culum_local_blotter(), i),
         Download.date_incomlend_portfolio(Download.read_incomlend_local_blotter(), i),i)
 
-    '''
-    @staticmethod
-    def date_portfolio(dfQ, dfF, dfC, dfI):
-        dataQ = dfQ.to_dict(orient='records')  # Here's our added param..
-        dataF = dfF.to_dict(orient='records')
-        dataC = dfC.to_dict(orient='records')
-        dataI = dfI.to_dict(orient='records')
-
-        Download.collection_search_portfolio.delete_many({})
-        Download.collection_search_portfolio.insert_many(dataQ)
-        Download.collection_search_portfolio.insert_many(dataF)
-        Download.collection_search_portfolio.insert_many(dataC)
-        Download.collection_search_portfolio.insert_many(dataI)
-    '''
 
     @staticmethod
     def date_qupital_portfolio(df, date):
@@ -552,7 +412,6 @@ class Download():
         return df
 
 
-
     @staticmethod
     def loan_transaction(writer, start_date, end_date):
 
@@ -661,18 +520,6 @@ class Download():
 
         dfI['Comment'] = dfI['Financing period']
 
-        '''
-        dfI2 = dfI[(dfI['Acutal payment date'] != 'NA')]
-        dfI2['Actual Tenor (day(s))'] = pd.to_datetime(dfI2['Acutal payment date']) - pd.to_datetime(
-            dfI2['Purchase date'])
-        dfI2['Actual Tenor (day(s))'] = dfI2['Actual Tenor (day(s))'].astype(str)
-
-        dfI = dfI[(dfI['Acutal payment date'] == 'NA')]
-        dfI['Comment'] = dfI['Tenor']
-        dfI2['Comment'] = dfI2['Actual Tenor (day(s))']   
-
-        dfI = pd.concat([dfI, dfI2])
-        '''
         dfI['Interest rate fixed'] = ((1 / (1 - dfI['Discount rate'])) ** 12 - 1) * 100
 
         dfI['Day count method'] = "act/360"
@@ -685,7 +532,6 @@ class Download():
         dfI['Company bank account'] = "INC 003-956032-0"
 
         dfI.rename(columns={"Effective Date":"Trade date"}, inplace=True)
-
 
 
         df = pd.concat([dfQ, dfF, dfC, dfI])
@@ -721,15 +567,9 @@ class Download():
         df['Intended maturity date'] = df['Intended maturity date'].str.split(' ').str[0]
         df['Initial charge date'] = df['Initial charge date'].str.split(' ').str[0]
 
-        '''
-        df['Advanced Date'] = pd.to_datetime(df['Advanced Date'])
-        df = df[(df['Advanced Date'] <= date)]
-        df['Advanced Date'] = df['Advanced Date'].astype(str)
-        '''
 
         i = datetime.strptime(start_date, '%Y-%m-%d')
         j = datetime.strptime(end_date, '%Y-%m-%d')
-
 
         df['Trade date'] = pd.to_datetime(df['Trade date'])
         df = df[(df['Trade date'] >= i)]
@@ -995,110 +835,10 @@ class Download():
         writer.sheets[RM].set_column(9, 9, 20, format2)
         writer.sheets[RM].set_column(10, 12, 20, format1)
         writer.sheets[RM].set_column(13, 13, 20, format2)
-
-
-
+    
+#############
 
 '''
-    df3 = df.groupby(['Seller code'],as_index=False).sum()
-    df3 = df3[['Seller code','Advance amount (USD)', '% total']]
-    df3 = df3.iloc[1:]
-
-    df4 = df.groupby(['Account'], as_index=False).sum()
-    df4 = df4[['Account', 'Advance amount (USD)', '% total']]
-    df4 = df4.iloc[1:]
-
-    df5 = df.groupby(['Obligor code'], as_index=False).sum()
-    df5 = df5[['Obligor code', 'Advance amount (USD)', '% total']]
-    df5 = df5.iloc[1:]
-
-    df6 = df.groupby(['Trade ID'], as_index=False).sum()
-    df6 = df6[['Trade ID', 'Advance amount (USD)', '% total']]
-    indexNames = df6[df6['Trade ID'] == 'Invested'].index
-    df6.drop(indexNames, inplace=True)
-    indexNames = df6[df6['Trade ID'] == 'Total'].index
-    df6.drop(indexNames, inplace=True)
-
-    RMS = sheet_name + "RM Seller"
-    RMA = sheet_name + "RM Account"
-    RMO = sheet_name + "RM Obligor"
-    RMT = sheet_name + "RM Trade"
-
-    len3 = len(df3.index)
-    len4 = len(df4.index)
-    len5 = len(df5.index)
-    len6 = len(df6.index)
-
-
-    df3.to_excel(writer, sheet_name=RMS, index=False)
-
-    chart = writer.book.add_chart({'type': 'pie'})
-    chart.add_series({
-        'categories': [RMS, 2, 0, len3, 0],
-        'values': [RMS, 2, 1, len3, 1 ]
-    })
-
-    writer.sheets[RMS].insert_chart('D2', chart)
-
-
-
-    df4.to_excel(writer, sheet_name=RMA, index=False)
-
-    chart = writer.book.add_chart({'type': 'pie'})
-    chart.add_series({
-        'categories': [RMA,2, 0, len4, 0],
-        'values': [RMA, 2, 1, len4, 1]
-    })
-
-    writer.sheets[RMA].insert_chart('D2', chart)
-
-    df5.to_excel(writer, sheet_name=RMO, index=False)
-
-    chart = writer.book.add_chart({'type': 'pie'})
-    chart.add_series({
-        'categories': [RMO, 2, 0, len5, 0],
-        'values': [RMO, 2, 1, len5, 1]
-    })
-
-    writer.sheets[RMO].insert_chart('D2', chart)
-
-
-    df6.to_excel(writer, sheet_name=RMT, index=False)
-
-    chart = writer.book.add_chart({'type': 'pie'})
-    chart.add_series({
-        'categories': [RMT,1, 0, len6, 0],
-        'values': [RMT,1, 1, len6, 1]
-    })
-
-    writer.sheets[RMT].insert_chart('D2', chart)
-
-
-    writer.sheets[RMS].set_column(0, 1, 20, format1)
-    writer.sheets[RMS].set_column(2, 2, 20, format2)
-    writer.sheets[RMA].set_column(0, 1, 20, format1)
-    writer.sheets[RMA].set_column(2, 2, 20, format2)
-    writer.sheets[RMO].set_column(0, 1, 20, format1)
-    writer.sheets[RMO].set_column(2, 2, 20, format2)
-    writer.sheets[RMT].set_column(0, 1, 20, format1)
-    writer.sheets[RMT].set_column(2, 2, 20, format2)
-
-    
-
-i = datetime.strptime(date1, '%Y-%m-%d')
-j = datetime.strptime(date2, '%Y-%m-%d')
-
-with ExcelWriter(xls_path, engine='xlsxwriter',options={'strings_to_numbers': True}) as writer:
-
-    while i <= j:
-        Download.save_xls(i, writer)
-        print(i)
-        #Database.insert("progress", {"data": i.strftime('%Y-%m-%d')})
-        i = i + timedelta(days=1)
-
-    writer.save()
-
-
 while True:
     start = time.time()
 
